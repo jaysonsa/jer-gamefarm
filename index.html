@@ -3,9 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Gastos sa Manukan</title>
-  <meta name="theme-color" content="#2f6b3a">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐔</text></svg>">
+  <title>JER Gamefarm</title>
+  <meta name="theme-color" content="#0f1115">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%23f59e0b'/><stop offset='1' stop-color='%23dc2626'/></linearGradient></defs><rect width='64' height='64' rx='16' fill='url(%23g)'/><text x='32' y='43' font-family='Arial,sans-serif' font-weight='800' font-size='30' fill='white' text-anchor='middle'>J</text></svg>">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,9 +16,9 @@
   <!-- ============ LOGIN ============ -->
   <section id="login-view" class="login-wrap" hidden>
     <form id="login-form" class="card login-card">
-      <div class="logo">🐔</div>
-      <h1>Gastos sa Manukan</h1>
-      <p class="muted">Mag-login para makita at ma-input ang mga gastos.</p>
+      <div class="logo-mark lg">JER</div>
+      <h1>JER Gamefarm</h1>
+      <p class="muted">Expense monitoring. Mag-login para makita at ma-input ang mga gastos.</p>
       <label>Email
         <input type="email" id="login-email" required autocomplete="username">
       </label>
@@ -30,7 +33,7 @@
   <!-- ============ HINDI PA NA-SETUP ============ -->
   <section id="setup-view" class="login-wrap" hidden>
     <div class="card login-card">
-      <div class="logo">⚙️</div>
+      <div class="logo-mark lg">⚙️</div>
       <h1>Hindi pa na-setup</h1>
       <p>I-edit ang <code>config.js</code> at ilagay ang Supabase URL at anon key. Tingnan ang <code>README.md</code> para sa steps.</p>
     </div>
@@ -39,7 +42,7 @@
   <!-- ============ MAIN APP ============ -->
   <div id="app-view" hidden>
     <header class="topbar">
-      <div class="brand">🐔 <span>Gastos sa Manukan</span></div>
+      <div class="brand"><span class="logo-mark">JER</span><span>JER <b>Gamefarm</b></span></div>
       <div class="user">
         <span id="user-email" class="muted small"></span>
         <button id="logout-btn" class="btn ghost small">Logout</button>
@@ -72,11 +75,11 @@
             <span class="value" id="sum-total">₱0.00</span>
             <span class="sub" id="sum-meta"></span>
           </div>
-          <div class="stat"><span class="label">Feeds</span><span class="value" id="sum-Feeds">₱0.00</span></div>
-          <div class="stat"><span class="label">Bakuna</span><span class="value" id="sum-Bakuna">₱0.00</span></div>
-          <div class="stat"><span class="label">Gamot</span><span class="value" id="sum-Gamot">₱0.00</span></div>
-          <div class="stat"><span class="label">Vitamins</span><span class="value" id="sum-Vitamins">₱0.00</span></div>
-          <div class="stat"><span class="label">Iba pa</span><span class="value" id="sum-Iba pa">₱0.00</span></div>
+          <div class="stat" data-cat="Feeds"><span class="label">Feeds</span><span class="value" id="sum-Feeds">₱0.00</span></div>
+          <div class="stat" data-cat="Bakuna"><span class="label">Bakuna</span><span class="value" id="sum-Bakuna">₱0.00</span></div>
+          <div class="stat" data-cat="Gamot"><span class="label">Gamot</span><span class="value" id="sum-Gamot">₱0.00</span></div>
+          <div class="stat" data-cat="Vitamins"><span class="label">Vitamins</span><span class="value" id="sum-Vitamins">₱0.00</span></div>
+          <div class="stat" data-cat="Iba pa"><span class="label">Iba pa</span><span class="value" id="sum-Iba pa">₱0.00</span></div>
         </section>
 
         <div class="grid">

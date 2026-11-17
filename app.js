@@ -329,8 +329,8 @@
         const meta = [fmtDate(e.expense_date), qty, e.notes ? esc(e.notes) : "", e.created_by ? "ni " + esc(e.created_by.split("@")[0]) : ""]
           .filter(Boolean)
           .join(" · ");
-        return `<li>
-          <div class="item"><span class="tag">${esc(e.category)}</span>${esc(e.item)}</div>
+        return `<li data-cat="${esc(e.category)}">
+          <div class="item"><span class="tag" data-cat="${esc(e.category)}">${esc(e.category)}</span>${esc(e.item)}</div>
           <div class="amount">${fmtPeso(e.amount)}</div>
           <div class="meta">${meta}</div>
           <div class="actions">

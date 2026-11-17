@@ -1,4 +1,4 @@
-# 🐔 Ex-Monitoring: Gastos sa Manukan
+# JER Gamefarm: Expense Monitoring
 
 Simpleng website para i-record ang mga gastos sa pag-aalaga ng manok, **per batch** (hal. Early Bird, National).
 Feeds, bakuna, gamot, vitamins at iba pa. Puwedeng gamitin nang sabay ng dalawa o higit pang tao, sa cellphone o laptop.
