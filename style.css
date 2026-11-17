@@ -23,6 +23,8 @@
   --c-Bakuna: #3b82f6;
   --c-Gamot: #ef4444;
   --c-Vitamins: #10b981;
+  --c-Rent: #06b6d4;
+  --c-Sahod: #ec4899;
   --c-Iba: #8b5cf6;
 
   --radius: 16px;
@@ -121,6 +123,7 @@ input, select {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   min-height: 46px;
+  min-width: 0;
   transition: border-color .15s, box-shadow .15s, background .15s;
 }
 input::placeholder { color: var(--muted); opacity: .7; }
@@ -176,7 +179,8 @@ select {
 .row-btns { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .row-btns.spread { justify-content: space-between; }
 
-.two { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 12px; }
+.two > label { min-width: 0; }
 
 /* ---------- Layout ---------- */
 .card {
@@ -255,7 +259,7 @@ select {
 /* ---------- Summary ---------- */
 .summary {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(7, 1fr);
   gap: 12px;
   margin-bottom: 20px;
 }
@@ -302,7 +306,7 @@ select {
   background: var(--c);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 20%, transparent);
 }
-.stat .value { font-size: 1.2rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.02em; overflow-wrap: anywhere; }
+.stat .value { font-size: 1.1rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .stat .sub { font-size: .85rem; opacity: .92; font-weight: 500; }
 
 .stat.main {
@@ -435,14 +439,52 @@ dialog::backdrop { background: rgba(2, 6, 23, .55); backdrop-filter: blur(4px); 
 }
 .toast.error { background: var(--danger); color: #fff; }
 
+/* ---------- Gastos bawat tao ---------- */
+.people { padding: 18px 22px; }
+.people h2 { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 12px; }
+.chips { display: flex; flex-wrap: wrap; gap: 10px; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px 6px 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  min-width: 0;
+}
+.chip .avatar {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--brand-grad);
+  color: #fff;
+  font-weight: 800;
+  font-size: .8rem;
+  flex: none;
+}
+.chip .who { font-weight: 600; font-size: .88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip .amt { font-weight: 800; font-size: .92rem; font-variant-numeric: tabular-nums; }
+.chip.muted-chip .avatar { background: var(--border); color: var(--muted); }
+.chip.muted-chip .who { color: var(--muted); }
+.expense-list .meta .paid-by { color: var(--text); font-weight: 600; }
+
 /* ---------- Kulay ng bawat category (huli para manalo sa defaults) ---------- */
 [data-cat][data-cat="Feeds"]    { --c: var(--c-Feeds); }
 [data-cat][data-cat="Bakuna"]   { --c: var(--c-Bakuna); }
 [data-cat][data-cat="Gamot"]    { --c: var(--c-Gamot); }
 [data-cat][data-cat="Vitamins"] { --c: var(--c-Vitamins); }
+[data-cat][data-cat="Rent"]     { --c: var(--c-Rent); }
+[data-cat][data-cat="Sahod"]    { --c: var(--c-Sahod); }
 [data-cat][data-cat="Iba pa"]   { --c: var(--c-Iba); }
 
 /* ---------- Responsive ---------- */
+@media (max-width: 1100px) {
+  .summary { grid-template-columns: repeat(4, 1fr); }
+}
+
 @media (max-width: 900px) {
   .grid { grid-template-columns: 1fr; }
   .summary { grid-template-columns: repeat(2, 1fr); }
@@ -457,6 +499,10 @@ dialog::backdrop { background: rgba(2, 6, 23, .55); backdrop-filter: blur(4px); 
   .batch-bar .row-btns { width: 100%; }
   .batch-bar .row-btns .btn { flex: 1; }
   .stat.main { padding: 22px 18px; }
+  .summary { gap: 10px; }
+  .stat { padding: 14px 12px 12px; }
+  .stat:not(.main) .value { font-size: clamp(.9rem, 4.2vw, 1.05rem); }
+  .chip { max-width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {

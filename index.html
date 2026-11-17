@@ -79,7 +79,14 @@
           <div class="stat" data-cat="Bakuna"><span class="label">Bakuna</span><span class="value" id="sum-Bakuna">₱0.00</span></div>
           <div class="stat" data-cat="Gamot"><span class="label">Gamot</span><span class="value" id="sum-Gamot">₱0.00</span></div>
           <div class="stat" data-cat="Vitamins"><span class="label">Vitamins</span><span class="value" id="sum-Vitamins">₱0.00</span></div>
+          <div class="stat" data-cat="Rent"><span class="label">Rent</span><span class="value" id="sum-Rent">₱0.00</span></div>
+          <div class="stat" data-cat="Sahod"><span class="label">Sahod</span><span class="value" id="sum-Sahod">₱0.00</span></div>
           <div class="stat" data-cat="Iba pa"><span class="label">Iba pa</span><span class="value" id="sum-Iba pa">₱0.00</span></div>
+        </section>
+
+        <section id="people-summary" class="card people" hidden>
+          <h2>Gastos bawat tao</h2>
+          <div id="people-chips" class="chips"></div>
         </section>
 
         <div class="grid">
@@ -97,12 +104,14 @@
                     <option>Bakuna</option>
                     <option>Gamot</option>
                     <option>Vitamins</option>
+                    <option>Rent</option>
+                    <option>Sahod</option>
                     <option>Iba pa</option>
                   </select>
                 </label>
               </div>
               <label>Item / Description
-                <input type="text" id="exp-item" required placeholder="hal. Chick Booster, 50kg">
+                <input type="text" id="exp-item" required placeholder="hal. Chick Booster 50kg, Sahod ni Mang Jose">
               </label>
               <div class="two">
                 <label>Dami <span class="muted small">(optional)</span>
@@ -113,12 +122,19 @@
                   <datalist id="unit-list">
                     <option value="sako"><option value="kg"><option value="bote">
                     <option value="vial"><option value="pack"><option value="pc">
+                    <option value="araw"><option value="buwan">
                   </datalist>
                 </label>
               </div>
-              <label>Kabuuang halaga (₱)
-                <input type="number" id="exp-amount" min="0" step="0.01" inputmode="decimal" required placeholder="0.00">
-              </label>
+              <div class="two">
+                <label>Halaga (₱)
+                  <input type="number" id="exp-amount" min="0" step="0.01" inputmode="decimal" required placeholder="0.00">
+                </label>
+                <label>Sino ang gumastos
+                  <input type="text" id="exp-paid-by" list="people-list" placeholder="hal. Jayson" autocomplete="off">
+                  <datalist id="people-list"></datalist>
+                </label>
+              </div>
               <label>Notes <span class="muted small">(optional)</span>
                 <input type="text" id="exp-notes" placeholder="hal. binili sa Agrivet ni Mang Jose">
               </label>
@@ -140,7 +156,12 @@
                   <option>Bakuna</option>
                   <option>Gamot</option>
                   <option>Vitamins</option>
+                  <option>Rent</option>
+                  <option>Sahod</option>
                   <option>Iba pa</option>
+                </select>
+                <select id="filter-person" aria-label="Filter kung sino ang gumastos">
+                  <option value="">Lahat ng tao</option>
                 </select>
                 <button id="export-btn" class="btn ghost small">CSV</button>
               </div>

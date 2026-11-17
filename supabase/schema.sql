@@ -51,12 +51,13 @@ create table if not exists public.expenses (
   id           uuid primary key default gen_random_uuid(),
   batch_id     uuid not null references public.batches(id) on delete cascade,
   expense_date date not null default current_date,
-  category     text not null check (category in ('Feeds', 'Bakuna', 'Gamot', 'Vitamins', 'Iba pa')),
+  category     text not null check (category in ('Feeds', 'Bakuna', 'Gamot', 'Vitamins', 'Rent', 'Sahod', 'Iba pa')),
   item         text not null,
   quantity     numeric check (quantity is null or quantity >= 0),
   unit         text,
   amount       numeric(12, 2) not null check (amount >= 0),
   notes        text,
+  paid_by      text,  -- kung sino ang gumastos / nagbayad
   created_by   text default (auth.jwt() ->> 'email'),
   created_at   timestamptz not null default now()
 );

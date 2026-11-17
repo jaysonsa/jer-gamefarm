@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const CATEGORIES = ["Feeds", "Bakuna", "Gamot", "Vitamins", "Iba pa"];
+  const CATEGORIES = ["Feeds", "Bakuna", "Gamot", "Vitamins", "Rent", "Sahod", "Iba pa"];
   const LAST_BATCH_KEY = "exmon:lastBatch";
 
   const $ = (id) => document.getElementById(id);
@@ -45,6 +45,7 @@
     totals: {},        // batch_id -> total amount
     currentId: null,
     expenses: [],      // expenses of current batch
+    people: [],        // mga pangalan ng gumastos (para sa suggestions)
     editingExpenseId: null,
     editingBatchId: null,
   };
@@ -125,16 +126,19 @@
   async function loadBatches() {
     const [b, t] = await Promise.all([
       db.from("batches").select("*").order("start_date", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false }),
-      db.from("expenses").select("batch_id, amount"),
+      db.from("expenses").select("batch_id, amount, paid_by"),
     ]);
     if (b.error) return fail(b.error);
     if (t.error) return fail(t.error);
 
     state.batches = b.data;
     state.totals = {};
+    const names = new Set();
     for (const row of t.data) {
       state.totals[row.batch_id] = (state.totals[row.batch_id] || 0) + Number(row.amount);
+      if (row.paid_by) names.add(row.paid_by);
     }
+    setPeople(names);
 
     const ids = state.batches.map((x) => x.id);
     if (!ids.includes(state.currentId)) {
@@ -145,6 +149,11 @@
     renderBatchSelect();
     renderOverview();
     await loadExpenses();
+  }
+
+  function setPeople(names) {
+    state.people = [...names].sort((a, b) => a.localeCompare(b));
+    $("people-list").innerHTML = state.people.map((n) => `<option value="${esc(n)}">`).join("");
   }
 
   function currentBatch() {
@@ -314,19 +323,45 @@
 
     // keep overview totals in sync
     state.totals[state.currentId] = total;
+
+    // gastos bawat tao
+    const perPerson = {};
+    for (const e of state.expenses) {
+      const who = e.paid_by || "Hindi nakalagay";
+      perPerson[who] = (perPerson[who] || 0) + Number(e.amount);
+    }
+    const entries = Object.entries(perPerson).sort((a, b) => b[1] - a[1]);
+    const hasNames = state.expenses.some((e) => e.paid_by);
+    $("people-summary").hidden = !hasNames;
+    $("people-chips").innerHTML = entries
+      .map(([who, amt]) => `<div class="chip${who === "Hindi nakalagay" ? " muted-chip" : ""}">
+          <span class="avatar">${esc(who.charAt(0).toUpperCase())}</span>
+          <span class="who">${esc(who)}</span>
+          <span class="amt">${fmtPeso(amt)}</span>
+        </div>`)
+      .join("");
+
+    // filter ng tao
+    const sel = $("filter-person");
+    const keep = sel.value;
+    const inBatch = [...new Set(state.expenses.map((e) => e.paid_by).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    sel.innerHTML = `<option value="">Lahat ng tao</option>` + inBatch.map((n) => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
+    sel.value = inBatch.includes(keep) ? keep : "";
+    sel.hidden = inBatch.length === 0;
   }
 
   function renderExpenses() {
     const filter = $("filter-category").value;
-    const rows = state.expenses.filter((e) => !filter || e.category === filter);
+    const person = $("filter-person").value;
+    const rows = state.expenses.filter((e) => (!filter || e.category === filter) && (!person || e.paid_by === person));
     $("expense-empty").hidden = rows.length > 0;
     $("expense-empty").textContent = state.expenses.length
-      ? "Walang gastos sa category na ito."
+      ? "Walang gastos na tugma sa filter."
       : "Wala pang gastos na naka-input.";
     $("expense-list").innerHTML = rows
       .map((e) => {
         const qty = e.quantity != null ? `${Number(e.quantity).toLocaleString()} ${esc(e.unit || "")}`.trim() : "";
-        const meta = [fmtDate(e.expense_date), qty, e.notes ? esc(e.notes) : "", e.created_by ? "ni " + esc(e.created_by.split("@")[0]) : ""]
+        const meta = [fmtDate(e.expense_date), qty, e.paid_by ? `<b class="paid-by">Gumastos: ${esc(e.paid_by)}</b>` : "", e.notes ? esc(e.notes) : ""]
           .filter(Boolean)
           .join(" · ");
         return `<li data-cat="${esc(e.category)}">
@@ -343,14 +378,17 @@
   }
 
   $("filter-category").addEventListener("change", renderExpenses);
+  $("filter-person").addEventListener("change", renderExpenses);
 
   function resetExpenseForm() {
     state.editingExpenseId = null;
     const keepDate = $("exp-date").value || today();
     const keepCat = $("exp-category").value;
+    const keepWho = $("exp-paid-by").value;
     $("expense-form").reset();
     $("exp-date").value = keepDate;
     $("exp-category").value = keepCat;
+    $("exp-paid-by").value = keepWho;
     $("expense-form-title").textContent = "Mag-input ng gastos";
     $("exp-submit").textContent = "I-save";
     $("exp-cancel").hidden = true;
@@ -370,6 +408,7 @@
       unit: textOrNull($("exp-unit").value),
       amount: Number($("exp-amount").value),
       notes: textOrNull($("exp-notes").value),
+      paid_by: textOrNull($("exp-paid-by").value),
     };
     await busy(e.submitter, async () => {
       const editing = state.editingExpenseId;
@@ -378,6 +417,7 @@
         : await db.from("expenses").insert(row);
       if (error) return fail(error);
       toast(editing ? "Na-update ang gastos." : "Na-save ang gastos.");
+      if (row.paid_by && !state.people.includes(row.paid_by)) setPeople([...state.people, row.paid_by]);
       resetExpenseForm();
       await loadExpenses();
       renderOverview();
@@ -400,6 +440,7 @@
       $("exp-unit").value = x.unit || "";
       $("exp-amount").value = x.amount;
       $("exp-notes").value = x.notes || "";
+      $("exp-paid-by").value = x.paid_by || "";
       $("expense-form-title").textContent = "I-edit ang gastos";
       $("exp-submit").textContent = "I-update";
       $("exp-cancel").hidden = false;
@@ -427,9 +468,9 @@
       const s = String(v ?? "");
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
-    const header = ["Petsa", "Category", "Item", "Dami", "Unit", "Halaga", "Notes", "Nag-input"];
+    const header = ["Petsa", "Category", "Item", "Dami", "Unit", "Halaga", "Gumastos", "Notes", "Nag-input"];
     const lines = [header, ...state.expenses.map((e) => [
-      e.expense_date, e.category, e.item, e.quantity ?? "", e.unit ?? "", Number(e.amount).toFixed(2), e.notes ?? "", e.created_by ?? "",
+      e.expense_date, e.category, e.item, e.quantity ?? "", e.unit ?? "", Number(e.amount).toFixed(2), e.paid_by ?? "", e.notes ?? "", e.created_by ?? "",
     ])].map((r) => r.map(cell).join(","));
     const blob = new Blob(["﻿" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
