@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="tl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gastos sa Manukan</title>
+  <meta name="theme-color" content="#2f6b3a">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐔</text></svg>">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ============ LOGIN ============ -->
+  <section id="login-view" class="login-wrap" hidden>
+    <form id="login-form" class="card login-card">
+      <div class="logo">🐔</div>
+      <h1>Gastos sa Manukan</h1>
+      <p class="muted">Mag-login para makita at ma-input ang mga gastos.</p>
+      <label>Email
+        <input type="email" id="login-email" required autocomplete="username">
+      </label>
+      <label>Password
+        <input type="password" id="login-password" required autocomplete="current-password">
+      </label>
+      <button type="submit" class="btn primary block">Login</button>
+      <p id="login-error" class="error" hidden></p>
+    </form>
+  </section>
+
+  <!-- ============ HINDI PA NA-SETUP ============ -->
+  <section id="setup-view" class="login-wrap" hidden>
+    <div class="card login-card">
+      <div class="logo">⚙️</div>
+      <h1>Hindi pa na-setup</h1>
+      <p>I-edit ang <code>config.js</code> at ilagay ang Supabase URL at anon key. Tingnan ang <code>README.md</code> para sa steps.</p>
+    </div>
+  </section>
+
+  <!-- ============ MAIN APP ============ -->
+  <div id="app-view" hidden>
+    <header class="topbar">
+      <div class="brand">🐔 <span>Gastos sa Manukan</span></div>
+      <div class="user">
+        <span id="user-email" class="muted small"></span>
+        <button id="logout-btn" class="btn ghost small">Logout</button>
+      </div>
+    </header>
+
+    <main class="container">
+
+      <!-- Batch picker -->
+      <section class="batch-bar">
+        <label class="grow">Batch
+          <select id="batch-select"></select>
+        </label>
+        <div class="row-btns">
+          <button id="edit-batch-btn" class="btn ghost">I-edit</button>
+          <button id="new-batch-btn" class="btn primary">+ Bagong Batch</button>
+        </div>
+      </section>
+
+      <div id="no-batch" class="card empty" hidden>
+        <p>Wala pang batch. Gumawa muna ng batch (hal. <b>Early Bird</b> o <b>National</b>).</p>
+        <button class="btn primary" data-action="new-batch">+ Bagong Batch</button>
+      </div>
+
+      <div id="batch-content" hidden>
+        <!-- Summary -->
+        <section class="summary">
+          <div class="stat main">
+            <span class="label">Kabuuang gastos</span>
+            <span class="value" id="sum-total">₱0.00</span>
+            <span class="sub" id="sum-meta"></span>
+          </div>
+          <div class="stat"><span class="label">Feeds</span><span class="value" id="sum-Feeds">₱0.00</span></div>
+          <div class="stat"><span class="label">Bakuna</span><span class="value" id="sum-Bakuna">₱0.00</span></div>
+          <div class="stat"><span class="label">Gamot</span><span class="value" id="sum-Gamot">₱0.00</span></div>
+          <div class="stat"><span class="label">Vitamins</span><span class="value" id="sum-Vitamins">₱0.00</span></div>
+          <div class="stat"><span class="label">Iba pa</span><span class="value" id="sum-Iba pa">₱0.00</span></div>
+        </section>
+
+        <div class="grid">
+          <!-- Expense form -->
+          <section class="card">
+            <h2 id="expense-form-title">Mag-input ng gastos</h2>
+            <form id="expense-form">
+              <div class="two">
+                <label>Petsa
+                  <input type="date" id="exp-date" required>
+                </label>
+                <label>Category
+                  <select id="exp-category" required>
+                    <option>Feeds</option>
+                    <option>Bakuna</option>
+                    <option>Gamot</option>
+                    <option>Vitamins</option>
+                    <option>Iba pa</option>
+                  </select>
+                </label>
+              </div>
+              <label>Item / Description
+                <input type="text" id="exp-item" required placeholder="hal. Chick Booster, 50kg">
+              </label>
+              <div class="two">
+                <label>Dami <span class="muted small">(optional)</span>
+                  <input type="number" id="exp-qty" min="0" step="any" inputmode="decimal" placeholder="hal. 2">
+                </label>
+                <label>Unit <span class="muted small">(optional)</span>
+                  <input type="text" id="exp-unit" placeholder="sako, bote, vial…" list="unit-list">
+                  <datalist id="unit-list">
+                    <option value="sako"><option value="kg"><option value="bote">
+                    <option value="vial"><option value="pack"><option value="pc">
+                  </datalist>
+                </label>
+              </div>
+              <label>Kabuuang halaga (₱)
+                <input type="number" id="exp-amount" min="0" step="0.01" inputmode="decimal" required placeholder="0.00">
+              </label>
+              <label>Notes <span class="muted small">(optional)</span>
+                <input type="text" id="exp-notes" placeholder="hal. binili sa Agrivet ni Mang Jose">
+              </label>
+              <div class="row-btns">
+                <button type="submit" class="btn primary" id="exp-submit">I-save</button>
+                <button type="button" class="btn ghost" id="exp-cancel" hidden>Cancel</button>
+              </div>
+            </form>
+          </section>
+
+          <!-- Expense list -->
+          <section class="card">
+            <div class="list-head">
+              <h2>Mga gastos</h2>
+              <div class="row-btns">
+                <select id="filter-category" aria-label="Filter category">
+                  <option value="">Lahat</option>
+                  <option>Feeds</option>
+                  <option>Bakuna</option>
+                  <option>Gamot</option>
+                  <option>Vitamins</option>
+                  <option>Iba pa</option>
+                </select>
+                <button id="export-btn" class="btn ghost small">CSV</button>
+              </div>
+            </div>
+            <ul id="expense-list" class="expense-list"></ul>
+            <p id="expense-empty" class="muted center" hidden>Wala pang gastos na naka-input.</p>
+          </section>
+        </div>
+      </div>
+
+      <!-- Overview -->
+      <section class="card">
+        <h2>Lahat ng Batch</h2>
+        <div class="table-wrap">
+          <table class="overview">
+            <thead>
+              <tr><th>Batch</th><th>Uri</th><th class="num">Sisiw</th><th class="num">Gastos</th><th class="num">Per sisiw</th><th>Status</th></tr>
+            </thead>
+            <tbody id="overview-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ============ BATCH DIALOG ============ -->
+  <dialog id="batch-dialog">
+    <form id="batch-form" class="dialog-body">
+      <h2 id="batch-dialog-title">Bagong Batch</h2>
+      <label>Pangalan ng batch
+        <input type="text" id="batch-name" required placeholder="hal. Early Bird - Batch 1">
+      </label>
+      <div class="two">
+        <label>Uri
+          <select id="batch-type">
+            <option>Early Bird</option>
+            <option>National</option>
+            <option>Iba pa</option>
+          </select>
+        </label>
+        <label>Status
+          <select id="batch-status">
+            <option value="active">Active</option>
+            <option value="closed">Tapos na</option>
+          </select>
+        </label>
+      </div>
+      <div class="two">
+        <label>Petsa ng simula
+          <input type="date" id="batch-start">
+        </label>
+        <label>Bilang ng sisiw
+          <input type="number" id="batch-chicks" min="0" step="1" inputmode="numeric">
+        </label>
+      </div>
+      <label>Notes <span class="muted small">(optional)</span>
+        <input type="text" id="batch-notes">
+      </label>
+      <div class="row-btns spread">
+        <button type="button" class="btn danger ghost" id="batch-delete" hidden>Burahin</button>
+        <span class="row-btns">
+          <button type="button" class="btn ghost" id="batch-cancel">Cancel</button>
+          <button type="submit" class="btn primary">I-save</button>
+        </span>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
