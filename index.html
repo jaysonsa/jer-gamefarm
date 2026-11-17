@@ -110,6 +110,14 @@
                   </select>
                 </label>
               </div>
+              <div id="rent-period" class="two period" hidden>
+                <label>Rent mula
+                  <input type="date" id="exp-period-start">
+                </label>
+                <label>Rent hanggang
+                  <input type="date" id="exp-period-end">
+                </label>
+              </div>
               <label>Item / Description
                 <input type="text" id="exp-item" required placeholder="hal. Chick Booster 50kg, Sahod ni Mang Jose">
               </label>
@@ -131,7 +139,7 @@
                   <input type="number" id="exp-amount" min="0" step="0.01" inputmode="decimal" required placeholder="0.00">
                 </label>
                 <label>Sino ang gumastos
-                  <input type="text" id="exp-paid-by" list="people-list" placeholder="hal. Jayson" autocomplete="off">
+                  <input type="text" id="exp-paid-by" list="people-list" placeholder="Name" autocomplete="off">
                   <datalist id="people-list"></datalist>
                 </label>
               </div>

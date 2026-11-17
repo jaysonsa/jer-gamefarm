@@ -58,6 +58,9 @@ create table if not exists public.expenses (
   amount       numeric(12, 2) not null check (amount >= 0),
   notes        text,
   paid_by      text,  -- kung sino ang gumastos / nagbayad
+  period_start date,  -- para sa Rent: simula ng saklaw na binayaran
+  period_end   date,  -- para sa Rent: katapusan ng saklaw
+  constraint expenses_period_check check (period_start is null or period_end is null or period_end >= period_start),
   created_by   text default (auth.jwt() ->> 'email'),
   created_at   timestamptz not null default now()
 );

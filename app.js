@@ -361,7 +361,8 @@
     $("expense-list").innerHTML = rows
       .map((e) => {
         const qty = e.quantity != null ? `${Number(e.quantity).toLocaleString()} ${esc(e.unit || "")}`.trim() : "";
-        const meta = [fmtDate(e.expense_date), qty, e.paid_by ? `<b class="paid-by">Gumastos: ${esc(e.paid_by)}</b>` : "", e.notes ? esc(e.notes) : ""]
+        const period = fmtPeriod(e.period_start, e.period_end);
+        const meta = [fmtDate(e.expense_date), period ? `<span class="period-tag">Saklaw: ${period}</span>` : "", qty, e.paid_by ? `<b class="paid-by">Gumastos: ${esc(e.paid_by)}</b>` : "", e.notes ? esc(e.notes) : ""]
           .filter(Boolean)
           .join(" · ");
         return `<li data-cat="${esc(e.category)}">
@@ -380,6 +381,29 @@
   $("filter-category").addEventListener("change", renderExpenses);
   $("filter-person").addEventListener("change", renderExpenses);
 
+  // Rent: kailangan ng start at end ng saklaw na binayaran
+  function toggleRentFields() {
+    const isRent = $("exp-category").value === "Rent";
+    $("rent-period").hidden = !isRent;
+    $("exp-period-start").required = isRent;
+    $("exp-period-end").required = isRent;
+  }
+
+  $("exp-category").addEventListener("change", toggleRentFields);
+
+  // Kapag pinili ang "mula" at wala pang "hanggang", lagyan ng 1 buwan
+  $("exp-period-start").addEventListener("change", () => {
+    const start = $("exp-period-start").value;
+    if (!start || $("exp-period-end").value) return;
+    const d = new Date(start + "T00:00:00");
+    d.setMonth(d.getMonth() + 1);
+    d.setDate(d.getDate() - 1);
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    $("exp-period-end").value = d.toISOString().slice(0, 10);
+  });
+
+  const fmtPeriod = (a, b) => (a && b ? `${fmtDate(a)} – ${fmtDate(b)}` : a ? `mula ${fmtDate(a)}` : b ? `hanggang ${fmtDate(b)}` : "");
+
   function resetExpenseForm() {
     state.editingExpenseId = null;
     const keepDate = $("exp-date").value || today();
@@ -389,6 +413,7 @@
     $("exp-date").value = keepDate;
     $("exp-category").value = keepCat;
     $("exp-paid-by").value = keepWho;
+    toggleRentFields();
     $("expense-form-title").textContent = "Mag-input ng gastos";
     $("exp-submit").textContent = "I-save";
     $("exp-cancel").hidden = true;
@@ -399,6 +424,10 @@
   $("expense-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     if (!state.currentId) return toast("Pumili muna ng batch.", true);
+    const isRent = $("exp-category").value === "Rent";
+    const pStart = isRent ? $("exp-period-start").value || null : null;
+    const pEnd = isRent ? $("exp-period-end").value || null : null;
+    if (pStart && pEnd && pEnd < pStart) return toast("Dapat mas huli ang \"hanggang\" kaysa sa \"mula\" ng rent.", true);
     const row = {
       batch_id: state.currentId,
       expense_date: $("exp-date").value,
@@ -409,6 +438,8 @@
       amount: Number($("exp-amount").value),
       notes: textOrNull($("exp-notes").value),
       paid_by: textOrNull($("exp-paid-by").value),
+      period_start: pStart,
+      period_end: pEnd,
     };
     await busy(e.submitter, async () => {
       const editing = state.editingExpenseId;
@@ -441,6 +472,9 @@
       $("exp-amount").value = x.amount;
       $("exp-notes").value = x.notes || "";
       $("exp-paid-by").value = x.paid_by || "";
+      $("exp-period-start").value = x.period_start || "";
+      $("exp-period-end").value = x.period_end || "";
+      toggleRentFields();
       $("expense-form-title").textContent = "I-edit ang gastos";
       $("exp-submit").textContent = "I-update";
       $("exp-cancel").hidden = false;
@@ -468,9 +502,9 @@
       const s = String(v ?? "");
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
-    const header = ["Petsa", "Category", "Item", "Dami", "Unit", "Halaga", "Gumastos", "Notes", "Nag-input"];
+    const header = ["Petsa", "Category", "Item", "Dami", "Unit", "Halaga", "Rent mula", "Rent hanggang", "Gumastos", "Notes", "Nag-input"];
     const lines = [header, ...state.expenses.map((e) => [
-      e.expense_date, e.category, e.item, e.quantity ?? "", e.unit ?? "", Number(e.amount).toFixed(2), e.paid_by ?? "", e.notes ?? "", e.created_by ?? "",
+      e.expense_date, e.category, e.item, e.quantity ?? "", e.unit ?? "", Number(e.amount).toFixed(2), e.period_start ?? "", e.period_end ?? "", e.paid_by ?? "", e.notes ?? "", e.created_by ?? "",
     ])].map((r) => r.map(cell).join(","));
     const blob = new Blob(["﻿" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
