@@ -60,7 +60,7 @@ Feeds, bakuna, gamot, vitamins at iba pa. Puwedeng gamitin nang sabay ng dalawa 
 2. Kopyahin ang:
    - **Project URL**, hal. `https://abcdefgh.supabase.co`
    - **anon public** key (mahabang text na nagsisimula sa `eyJ...`, o `sb_publishable_...` sa bagong version)
-3. Buksan ang [`config.js`](config.js) at palitan:
+3. Buksan ang [`ex-monitoring/config.js`](ex-monitoring/config.js) at palitan:
    ```js
    window.APP_CONFIG = {
      SUPABASE_URL: "https://abcdefgh.supabase.co",
@@ -83,12 +83,12 @@ git push
 
 ### Step 7: I-on ang GitHub Pages
 
-1. Pumunta sa <https://github.com/jaysonsa/ex-monitoring>, tapos **Settings > Pages**.
+1. Pumunta sa <https://github.com/jaysonsa/jer-gamefarm>, tapos **Settings > Pages**.
 2. Sa **Build and deployment**:
    - Source: **Deploy from a branch**
    - Branch: **main**, folder **/ (root)**, tapos **Save**
 3. Maghintay ng 1–2 minuto. Lalabas ang link:
-   **<https://jaysonsa.github.io/ex-monitoring/>**
+   **<https://jaysonsa.github.io/jer-gamefarm/ex-monitoring/>**
 
 Ibigay ang link sa partner mo, tapos mag-login siya gamit ang email at password na ginawa sa Step 3.
 
@@ -100,9 +100,9 @@ Ibigay ang link sa partner mo, tapos mag-login siya gamit ang email at password 
 
 ```bash
 cd ~/Personal/ex-monitoring
-python3 -m http.server 8000
+python3 -m http.server 8080
 ```
-Tapos buksan ang <http://localhost:8000>.
+Tapos buksan ang <http://localhost:8080/ex-monitoring/>.
 
 ---
 
@@ -133,8 +133,9 @@ Para sa backup, gamitin ang **CSV** button paminsan-minsan, o **Table Editor > E
 
 | File | Para saan |
 |---|---|
-| `index.html` | Ang itsura ng website |
-| `style.css` | Kulay at layout |
-| `app.js` | Lahat ng logic (login, batch, gastos, summary) |
-| `config.js` | Supabase URL at anon key |
+| `index.html` | Nagdadala sa `ex-monitoring/` |
+| `ex-monitoring/index.html` | Ang itsura ng website |
+| `ex-monitoring/style.css` | Kulay at layout |
+| `ex-monitoring/app.js` | Lahat ng logic (login, batch, gastos, summary) |
+| `ex-monitoring/config.js` | Supabase URL at anon key |
 | `supabase/schema.sql` | Database tables at security rules |
