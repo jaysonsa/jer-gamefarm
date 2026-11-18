@@ -45,6 +45,7 @@
 
   const state = {
     user: null,
+    role: "viewer",
     batches: [],
     totals: {},        // batch_id -> total amount
     currentId: null,
@@ -127,11 +128,22 @@
     $("login-view").hidden = true;
     $("app-view").hidden = false;
     $("user-email").textContent = user.email;
+    await loadRole();
     $("exp-date").value = today();
     $("cull-date").value = today();
     const lastTab = store.get(LAST_TAB_KEY);
     setTab(TABS.includes(lastTab) ? lastTab : "gastos");
     await loadBatches();
+  }
+
+  // Editor o viewer? (galing sa database; doon din ipinapatupad ang tunay na restriction)
+  async function loadRole() {
+    const { data, error } = await db.rpc("my_role");
+    if (error) console.error(error);
+    state.role = data === "editor" ? "editor" : "viewer";
+    const viewer = state.role !== "editor";
+    document.body.classList.toggle("read-only", viewer);
+    $("role-badge").hidden = !viewer;
   }
 
   $("login-form").addEventListener("submit", async (e) => {
@@ -417,7 +429,7 @@
           <div class="item"><span class="tag" data-cat="${esc(e.category)}">${esc(e.category)}</span>${esc(e.item)}</div>
           <div class="amount">${fmtPeso(e.amount)}</div>
           <div class="meta">${meta}</div>
-          <div class="actions">
+          <div class="actions editor-only">
             <button data-edit="${esc(e.id)}">I-edit</button>
             <button data-del="${esc(e.id)}">Burahin</button>
           </div>
@@ -646,7 +658,7 @@
           <div class="item">${esc(c.markings)}</div>
           <div class="amount">${Number(c.quantity).toLocaleString()} <span class="unit">ulo</span></div>
           <div class="meta">${[fmtDate(c.cull_date), c.notes ? esc(c.notes) : ""].filter(Boolean).join(" · ")}</div>
-          <div class="actions">
+          <div class="actions editor-only">
             <button data-edit="${esc(c.id)}">I-edit</button>
             <button data-del="${esc(c.id)}">Burahin</button>
           </div>
@@ -755,7 +767,7 @@
           <div class="item"><span class="wb-no">#${esc(w.wingband_no)}</span>${w.markings ? esc(w.markings) : '<span class="muted">Walang markings</span>'}</div>
           <div class="amount"></div>
           <div class="meta">${w.notes ? esc(w.notes) : ""}</div>
-          <div class="actions">
+          <div class="actions editor-only">
             <button data-edit="${esc(w.id)}">I-edit</button>
             <button data-del="${esc(w.id)}">Burahin</button>
           </div>

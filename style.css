@@ -496,6 +496,21 @@ dialog::backdrop { background: rgba(2, 6, 23, .55); backdrop-filter: blur(4px); 
 .pager .btn { min-width: 44px; }
 .pager .btn:disabled { opacity: .35; cursor: default; }
 
+/* ---------- View only (viewer) ---------- */
+.read-only .editor-only { display: none !important; }
+.read-only .grid { grid-template-columns: minmax(0, 1fr); }
+.role-badge {
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--c-Bakuna);
+  background: color-mix(in srgb, var(--c-Bakuna) 14%, transparent);
+  white-space: nowrap;
+}
+
 /* ---------- Tabs ---------- */
 .tabs {
   display: flex;

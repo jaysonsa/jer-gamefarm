@@ -133,11 +133,69 @@ create policy "allowed users only" on public.wingbands
   with check (public.is_allowed());
 
 -- ---------------------------------------------------------------------
+-- 4c. Editor at Viewer
+-- ---------------------------------------------------------------------
+-- Role ng bawat email (default: viewer, para ligtas ang bagong idadagdag)
+alter table public.allowed_emails
+  add column if not exists role text not null default 'viewer'
+  check (role in ('editor', 'viewer'));
+
+-- 3. Tinitingnan kung editor ang naka-login
+create or replace function public.is_editor()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.allowed_emails
+    where lower(email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+      and role = 'editor'
+  );
+$$;
+
+-- 4. Para malaman ng website kung editor o viewer ang naka-login
+create or replace function public.my_role()
+returns text
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select role from public.allowed_emails
+  where lower(email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+  limit 1;
+$$;
+
+grant execute on function public.my_role() to authenticated;
+
+-- Security rules: lahat ng allowed ay puwedeng tumingin, editor lang ang puwedeng magbago
+do $$
+declare t text;
+begin
+  foreach t in array array['batches', 'expenses', 'culls', 'wingbands'] loop
+    execute format('drop policy if exists "allowed users only" on public.%I', t);
+    execute format('drop policy if exists "allowed can view" on public.%I', t);
+    execute format('drop policy if exists "editor can insert" on public.%I', t);
+    execute format('drop policy if exists "editor can update" on public.%I', t);
+    execute format('drop policy if exists "editor can delete" on public.%I', t);
+
+    execute format('create policy "allowed can view" on public.%I for select to authenticated using (public.is_allowed())', t);
+    execute format('create policy "editor can insert" on public.%I for insert to authenticated with check (public.is_editor())', t);
+    execute format('create policy "editor can update" on public.%I for update to authenticated using (public.is_editor()) with check (public.is_editor())', t);
+    execute format('create policy "editor can delete" on public.%I for delete to authenticated using (public.is_editor())', t);
+  end loop;
+end $$;
+
+
+-- ---------------------------------------------------------------------
 -- 5. ILAGAY DITO ANG EMAIL NINYONG DALAWA (palitan bago i-Run)
 -- ---------------------------------------------------------------------
-insert into public.allowed_emails (email) values
-  ('ikaw@example.com'),
-  ('partner@example.com')
+-- 'editor' = puwedeng mag-edit, 'viewer' = tingin lang
+insert into public.allowed_emails (email, role) values
+  ('ikaw@example.com', 'editor'),
+  ('partner@example.com', 'viewer')
 on conflict do nothing;
 
 -- Optional: mga sample batch (puwedeng burahin ang mga linyang ito)

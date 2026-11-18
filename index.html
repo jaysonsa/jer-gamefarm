@@ -44,6 +44,7 @@
     <header class="topbar">
       <div class="brand"><span class="logo-mark">JER</span><span>JER <b>Gamefarm</b></span></div>
       <div class="user">
+        <span id="role-badge" class="role-badge" hidden>View only</span>
         <span id="user-email" class="muted small"></span>
         <button id="logout-btn" class="btn ghost small">Logout</button>
       </div>
@@ -57,14 +58,14 @@
           <select id="batch-select"></select>
         </label>
         <div class="row-btns">
-          <button id="edit-batch-btn" class="btn ghost">I-edit</button>
-          <button id="new-batch-btn" class="btn primary">+ Bagong Batch</button>
+          <button id="edit-batch-btn" class="btn ghost editor-only">I-edit</button>
+          <button id="new-batch-btn" class="btn primary editor-only">+ Bagong Batch</button>
         </div>
       </section>
 
       <div id="no-batch" class="card empty" hidden>
         <p>Wala pang batch. Gumawa muna ng batch (hal. <b>Early Bird</b> o <b>National</b>).</p>
-        <button class="btn primary" data-action="new-batch">+ Bagong Batch</button>
+        <button class="btn primary editor-only" data-action="new-batch">+ Bagong Batch</button>
       </div>
 
       <div id="batch-content" hidden>
@@ -99,7 +100,7 @@
 
           <div class="grid">
             <!-- Expense form -->
-            <section class="card">
+            <section class="card editor-only">
               <h2 id="expense-form-title">Mag-input ng gastos</h2>
               <form id="expense-form">
                 <div class="two">
@@ -203,7 +204,7 @@
           </section>
 
           <div class="grid">
-            <section class="card">
+            <section class="card editor-only">
               <h2 id="cull-form-title">Mag-lista ng culled</h2>
               <form id="cull-form">
                 <div class="two">
@@ -243,7 +244,7 @@
         <!-- ===== TAB: WINGBAND ===== -->
         <div class="panel" data-panel="wingband" hidden>
           <div class="grid">
-            <section class="card">
+            <section class="card editor-only">
               <h2 id="wb-form-title">Mag-lagay ng wingband</h2>
               <form id="wb-form">
                 <label>Wingband number
