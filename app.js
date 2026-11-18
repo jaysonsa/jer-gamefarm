@@ -5,6 +5,7 @@
   const LAST_BATCH_KEY = "exmon:lastBatch";
   const LAST_TAB_KEY = "exmon:lastTab";
   const TABS = ["gastos", "culled", "wingband"];
+  const PAGE_SIZE = 10;
   const byNatural = (a, b) => String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: "base" });
 
   const $ = (id) => document.getElementById(id);
@@ -55,6 +56,7 @@
     wingbands: [],     // wingbands ng current batch
     editingCullId: null,
     editingWbId: null,
+    pages: { exp: 1, cull: 1, wb: 1 },
   };
 
   // ---------------------------------------------------------------
@@ -83,6 +85,33 @@
   async function busy(btn, fn) {
     if (btn) btn.disabled = true;
     try { return await fn(); } finally { if (btn) btn.disabled = false; }
+  }
+
+  // Pagination: ibalik ang mga row ng kasalukuyang pahina at i-render ang pager
+  function paginate(key, rows, pagerId) {
+    const pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+    const p = Math.min(Math.max(state.pages[key], 1), pages);
+    state.pages[key] = p;
+    const pager = $(pagerId);
+    pager.hidden = pages <= 1;
+    if (pages > 1) {
+      const from = (p - 1) * PAGE_SIZE + 1;
+      const to = Math.min(p * PAGE_SIZE, rows.length);
+      pager.innerHTML = `<button type="button" class="btn ghost small" data-page="prev" ${p === 1 ? "disabled" : ""} aria-label="Nakaraang pahina">‹ Nakaraan</button>
+        <span class="info">${from}–${to} ng ${rows.length}<br>Pahina ${p} / ${pages}</span>
+        <button type="button" class="btn ghost small" data-page="next" ${p === pages ? "disabled" : ""} aria-label="Susunod na pahina">Susunod ›</button>`;
+    }
+    return rows.slice((p - 1) * PAGE_SIZE, p * PAGE_SIZE);
+  }
+
+  function bindPager(pagerId, key, rerender, listId) {
+    $(pagerId).addEventListener("click", (e) => {
+      const dir = e.target.closest("[data-page]")?.dataset.page;
+      if (!dir) return;
+      state.pages[key] += dir === "next" ? 1 : -1;
+      rerender();
+      $(listId).closest(".card").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   }
 
   // ---------------------------------------------------------------
@@ -232,6 +261,7 @@
     resetExpenseForm();
     resetCullForm();
     resetWbForm();
+    state.pages = { exp: 1, cull: 1, wb: 1 };
     renderOverview();
     await loadBatchData();
   }
@@ -376,7 +406,7 @@
     $("expense-empty").textContent = state.expenses.length
       ? "Walang gastos na tugma sa filter."
       : "Wala pang gastos na naka-input.";
-    $("expense-list").innerHTML = rows
+    $("expense-list").innerHTML = paginate("exp", rows, "exp-pager")
       .map((e) => {
         const qty = e.quantity != null ? `${Number(e.quantity).toLocaleString()} ${esc(e.unit || "")}`.trim() : "";
         const period = fmtPeriod(e.period_start, e.period_end);
@@ -396,8 +426,10 @@
       .join("");
   }
 
-  $("filter-category").addEventListener("change", renderExpenses);
-  $("filter-person").addEventListener("change", renderExpenses);
+  const refilterExpenses = () => { state.pages.exp = 1; renderExpenses(); };
+  $("filter-category").addEventListener("change", refilterExpenses);
+  $("filter-person").addEventListener("change", refilterExpenses);
+  bindPager("exp-pager", "exp", renderExpenses, "expense-list");
 
   // Rent: kailangan ng start at end ng saklaw na binayaran
   function toggleRentFields() {
@@ -609,7 +641,7 @@
       .join("");
 
     $("cull-empty").hidden = state.culls.length > 0;
-    $("cull-list").innerHTML = state.culls
+    $("cull-list").innerHTML = paginate("cull", state.culls, "cull-pager")
       .map((c) => `<li class="rec-cull">
           <div class="item">${esc(c.markings)}</div>
           <div class="amount">${Number(c.quantity).toLocaleString()} <span class="unit">ulo</span></div>
@@ -635,6 +667,7 @@
   }
 
   $("cull-cancel").addEventListener("click", resetCullForm);
+  bindPager("cull-pager", "cull", renderCulls, "cull-list");
 
   $("cull-form").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -717,7 +750,7 @@
     $("wb-count").textContent = n ? `(${n.toLocaleString()})` : "";
     $("wb-empty").hidden = rows.length > 0;
     $("wb-empty").textContent = n ? "Walang tugma sa hinahanap." : "Wala pang wingband na naka-lista.";
-    $("wb-list").innerHTML = rows
+    $("wb-list").innerHTML = paginate("wb", rows, "wb-pager")
       .map((w) => `<li class="rec-wb">
           <div class="item"><span class="wb-no">#${esc(w.wingband_no)}</span>${w.markings ? esc(w.markings) : '<span class="muted">Walang markings</span>'}</div>
           <div class="amount"></div>
@@ -732,7 +765,8 @@
     refreshMarkingSuggestions();
   }
 
-  $("wb-search").addEventListener("input", renderWingbands);
+  $("wb-search").addEventListener("input", () => { state.pages.wb = 1; renderWingbands(); });
+  bindPager("wb-pager", "wb", renderWingbands, "wb-list");
 
   function resetWbForm() {
     state.editingWbId = null;
