@@ -3,6 +3,9 @@
 
   const CATEGORIES = ["Feeds", "Bakuna", "Gamot", "Vitamins", "Rent", "Sahod", "Iba pa"];
   const LAST_BATCH_KEY = "exmon:lastBatch";
+  const LAST_TAB_KEY = "exmon:lastTab";
+  const TABS = ["gastos", "culled", "wingband"];
+  const byNatural = (a, b) => String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: "base" });
 
   const $ = (id) => document.getElementById(id);
   const peso = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" });
@@ -48,6 +51,10 @@
     people: [],        // mga pangalan ng gumastos (para sa suggestions)
     editingExpenseId: null,
     editingBatchId: null,
+    culls: [],         // culled ng current batch
+    wingbands: [],     // wingbands ng current batch
+    editingCullId: null,
+    editingWbId: null,
   };
 
   // ---------------------------------------------------------------
@@ -92,6 +99,9 @@
     $("app-view").hidden = false;
     $("user-email").textContent = user.email;
     $("exp-date").value = today();
+    $("cull-date").value = today();
+    const lastTab = store.get(LAST_TAB_KEY);
+    setTab(TABS.includes(lastTab) ? lastTab : "gastos");
     await loadBatches();
   }
 
@@ -148,7 +158,11 @@
 
     renderBatchSelect();
     renderOverview();
-    await loadExpenses();
+    await loadBatchData();
+  }
+
+  async function loadBatchData() {
+    await Promise.all([loadExpenses(), loadCulls(), loadWingbands()]);
   }
 
   function setPeople(names) {
@@ -216,8 +230,10 @@
     store.set(LAST_BATCH_KEY, id);
     $("batch-select").value = id;
     resetExpenseForm();
+    resetCullForm();
+    resetWbForm();
     renderOverview();
-    await loadExpenses();
+    await loadBatchData();
   }
 
   // Batch dialog
@@ -272,7 +288,9 @@
     const count = state.expenses.length;
     const ok = confirm(
       `Burahin ang batch na "${b.name}"?` +
-        (count ? `\n\nKasama ring mabubura ang ${count} gastos na naka-input dito. Hindi na ito maibabalik.` : "")
+        (count || state.culls.length || state.wingbands.length
+          ? `\n\nKasama ring mabubura ang lahat ng gastos (${count}), culled (${state.culls.length}) at wingband (${state.wingbands.length}) ng batch na ito. Hindi na ito maibabalik.`
+          : "")
     );
     if (!ok) return;
     const { error } = await db.from("batches").delete().eq("id", b.id);
@@ -498,20 +516,291 @@
   $("export-btn").addEventListener("click", () => {
     const b = currentBatch();
     if (!b || !state.expenses.length) return toast("Walang ma-export.", true);
+    const header = ["Petsa", "Category", "Item", "Dami", "Unit", "Halaga", "Rent mula", "Rent hanggang", "Gumastos", "Notes", "Nag-input"];
+    const lines = [header, ...state.expenses.map((e) => [
+      e.expense_date, e.category, e.item, e.quantity ?? "", e.unit ?? "", Number(e.amount).toFixed(2), e.period_start ?? "", e.period_end ?? "", e.paid_by ?? "", e.notes ?? "", e.created_by ?? "",
+    ])];
+    downloadCsv(`${safeName(b.name)}-gastos.csv`, lines);
+  });
+
+  function safeName(name) {
+    return String(name).replace(/[^\w\- ]+/g, "").trim() || "batch";
+  }
+
+  function downloadCsv(filename, rows) {
     const cell = (v) => {
       const s = String(v ?? "");
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
-    const header = ["Petsa", "Category", "Item", "Dami", "Unit", "Halaga", "Rent mula", "Rent hanggang", "Gumastos", "Notes", "Nag-input"];
-    const lines = [header, ...state.expenses.map((e) => [
-      e.expense_date, e.category, e.item, e.quantity ?? "", e.unit ?? "", Number(e.amount).toFixed(2), e.period_start ?? "", e.period_end ?? "", e.paid_by ?? "", e.notes ?? "", e.created_by ?? "",
-    ])].map((r) => r.map(cell).join(","));
-    const blob = new Blob(["﻿" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const text = rows.map((r) => r.map(cell).join(",")).join("\n");
+    const blob = new Blob(["﻿" + text], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `${b.name.replace(/[^\w\- ]+/g, "").trim() || "batch"}-gastos.csv`;
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(a.href);
+  }
+
+  // ---------------------------------------------------------------
+  // Tabs
+  // ---------------------------------------------------------------
+  function setTab(name) {
+    document.querySelectorAll(".tab").forEach((t) => {
+      const on = t.dataset.tab === name;
+      t.classList.toggle("active", on);
+      t.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    document.querySelectorAll("[data-panel]").forEach((p) => (p.hidden = p.dataset.panel !== name));
+    $("overview-card").hidden = name !== "gastos";
+    store.set(LAST_TAB_KEY, name);
+  }
+
+  document.querySelector(".tabs").addEventListener("click", (e) => {
+    const t = e.target.closest(".tab");
+    if (t) setTab(t.dataset.tab);
+  });
+
+  function setDatalist(id, values) {
+    $(id).innerHTML = [...new Set(values.filter(Boolean))].sort(byNatural).map((v) => `<option value="${esc(v)}">`).join("");
+  }
+
+  function refreshMarkingSuggestions() {
+    const all = [...state.culls.map((c) => c.markings), ...state.wingbands.map((w) => w.markings)];
+    setDatalist("cull-markings-list", all);
+    setDatalist("wb-markings-list", all);
+  }
+
+  // ---------------------------------------------------------------
+  // Culled
+  // ---------------------------------------------------------------
+  async function loadCulls() {
+    if (!state.currentId) { state.culls = []; return; }
+    const { data, error } = await db
+      .from("culls")
+      .select("*")
+      .eq("batch_id", state.currentId)
+      .order("cull_date", { ascending: false })
+      .order("created_at", { ascending: false });
+    if (error) return fail(error);
+    state.culls = data;
+    renderCulls();
+  }
+
+  function renderCulls() {
+    const b = currentBatch();
+    const total = state.culls.reduce((n, c) => n + Number(c.quantity), 0);
+    $("cull-total").textContent = total.toLocaleString();
+    $("tab-count-culled").textContent = total ? total.toLocaleString() : "";
+    if (b?.chick_count) {
+      $("cull-remaining").textContent = `${Math.max(b.chick_count - total, 0).toLocaleString()} / ${b.chick_count.toLocaleString()}`;
+      $("cull-percent").textContent = ((total / b.chick_count) * 100).toFixed(1) + "%";
+    } else {
+      $("cull-remaining").textContent = "—";
+      $("cull-percent").textContent = "—";
+    }
+
+    // bawat marking
+    const per = {};
+    for (const c of state.culls) per[c.markings] = (per[c.markings] || 0) + Number(c.quantity);
+    const entries = Object.entries(per).sort((a, b) => b[1] - a[1] || byNatural(a[0], b[0]));
+    $("cull-by-marking").hidden = entries.length === 0;
+    $("cull-chips").innerHTML = entries
+      .map(([m, q]) => `<div class="chip"><span class="who">${esc(m)}</span><span class="amt">${q.toLocaleString()}</span></div>`)
+      .join("");
+
+    $("cull-empty").hidden = state.culls.length > 0;
+    $("cull-list").innerHTML = state.culls
+      .map((c) => `<li class="rec-cull">
+          <div class="item">${esc(c.markings)}</div>
+          <div class="amount">${Number(c.quantity).toLocaleString()} <span class="unit">ulo</span></div>
+          <div class="meta">${[fmtDate(c.cull_date), c.notes ? esc(c.notes) : ""].filter(Boolean).join(" · ")}</div>
+          <div class="actions">
+            <button data-edit="${esc(c.id)}">I-edit</button>
+            <button data-del="${esc(c.id)}">Burahin</button>
+          </div>
+        </li>`)
+      .join("");
+
+    refreshMarkingSuggestions();
+  }
+
+  function resetCullForm() {
+    state.editingCullId = null;
+    const keepDate = $("cull-date").value || today();
+    $("cull-form").reset();
+    $("cull-date").value = keepDate;
+    $("cull-form-title").textContent = "Mag-lista ng culled";
+    $("cull-submit").textContent = "I-save";
+    $("cull-cancel").hidden = true;
+  }
+
+  $("cull-cancel").addEventListener("click", resetCullForm);
+
+  $("cull-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!state.currentId) return toast("Pumili muna ng batch.", true);
+    const row = {
+      batch_id: state.currentId,
+      cull_date: $("cull-date").value,
+      quantity: Number($("cull-qty").value),
+      markings: $("cull-markings").value.trim(),
+      notes: textOrNull($("cull-notes").value),
+    };
+    await busy(e.submitter, async () => {
+      const editing = state.editingCullId;
+      const { error } = editing
+        ? await db.from("culls").update(row).eq("id", editing)
+        : await db.from("culls").insert(row);
+      if (error) return fail(error);
+      toast(editing ? "Na-update ang culled." : "Na-save ang culled.");
+      resetCullForm();
+      await loadCulls();
+      $("cull-qty").focus();
+    });
+  });
+
+  $("cull-list").addEventListener("click", async (e) => {
+    const editId = e.target.dataset.edit;
+    const delId = e.target.dataset.del;
+    if (editId) {
+      const x = state.culls.find((r) => r.id === editId);
+      if (!x) return;
+      state.editingCullId = x.id;
+      $("cull-date").value = x.cull_date;
+      $("cull-qty").value = x.quantity;
+      $("cull-markings").value = x.markings;
+      $("cull-notes").value = x.notes || "";
+      $("cull-form-title").textContent = "I-edit ang culled";
+      $("cull-submit").textContent = "I-update";
+      $("cull-cancel").hidden = false;
+      $("cull-form").scrollIntoView({ behavior: "smooth", block: "start" });
+      $("cull-qty").focus();
+    }
+    if (delId) {
+      const x = state.culls.find((r) => r.id === delId);
+      if (!x || !confirm(`Burahin ang culled na "${x.markings}" (${x.quantity})?`)) return;
+      const { error } = await db.from("culls").delete().eq("id", delId);
+      if (error) return fail(error);
+      if (state.editingCullId === delId) resetCullForm();
+      toast("Nabura.");
+      await loadCulls();
+    }
+  });
+
+  $("cull-export-btn").addEventListener("click", () => {
+    const b = currentBatch();
+    if (!b || !state.culls.length) return toast("Walang ma-export.", true);
+    downloadCsv(`${safeName(b.name)}-culled.csv`, [
+      ["Petsa", "Markings", "Quantity", "Notes", "Nag-input"],
+      ...state.culls.map((c) => [c.cull_date, c.markings, c.quantity, c.notes ?? "", c.created_by ?? ""]),
+    ]);
+  });
+
+  // ---------------------------------------------------------------
+  // Wingband
+  // ---------------------------------------------------------------
+  async function loadWingbands() {
+    if (!state.currentId) { state.wingbands = []; return; }
+    const { data, error } = await db.from("wingbands").select("*").eq("batch_id", state.currentId);
+    if (error) return fail(error);
+    state.wingbands = data.sort((a, b) => byNatural(a.wingband_no, b.wingband_no));
+    renderWingbands();
+  }
+
+  function renderWingbands() {
+    const q = $("wb-search").value.trim().toLowerCase();
+    const rows = state.wingbands.filter(
+      (w) => !q || [w.wingband_no, w.markings, w.notes].some((v) => String(v ?? "").toLowerCase().includes(q))
+    );
+    const n = state.wingbands.length;
+    $("tab-count-wingband").textContent = n ? n.toLocaleString() : "";
+    $("wb-count").textContent = n ? `(${n.toLocaleString()})` : "";
+    $("wb-empty").hidden = rows.length > 0;
+    $("wb-empty").textContent = n ? "Walang tugma sa hinahanap." : "Wala pang wingband na naka-lista.";
+    $("wb-list").innerHTML = rows
+      .map((w) => `<li class="rec-wb">
+          <div class="item"><span class="wb-no">#${esc(w.wingband_no)}</span>${w.markings ? esc(w.markings) : '<span class="muted">Walang markings</span>'}</div>
+          <div class="amount"></div>
+          <div class="meta">${w.notes ? esc(w.notes) : ""}</div>
+          <div class="actions">
+            <button data-edit="${esc(w.id)}">I-edit</button>
+            <button data-del="${esc(w.id)}">Burahin</button>
+          </div>
+        </li>`)
+      .join("");
+
+    refreshMarkingSuggestions();
+  }
+
+  $("wb-search").addEventListener("input", renderWingbands);
+
+  function resetWbForm() {
+    state.editingWbId = null;
+    $("wb-form").reset();
+    $("wb-form-title").textContent = "Mag-lagay ng wingband";
+    $("wb-submit").textContent = "I-save";
+    $("wb-cancel").hidden = true;
+  }
+
+  $("wb-cancel").addEventListener("click", resetWbForm);
+
+  $("wb-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!state.currentId) return toast("Pumili muna ng batch.", true);
+    const row = {
+      batch_id: state.currentId,
+      wingband_no: $("wb-number").value.trim(),
+      markings: textOrNull($("wb-markings").value),
+      notes: textOrNull($("wb-notes").value),
+    };
+    await busy(e.submitter, async () => {
+      const editing = state.editingWbId;
+      const { error } = editing
+        ? await db.from("wingbands").update(row).eq("id", editing)
+        : await db.from("wingbands").insert(row);
+      if (error?.code === "23505") return toast(`May wingband #${row.wingband_no} na sa batch na ito.`, true);
+      if (error) return fail(error);
+      toast(editing ? "Na-update ang wingband." : `Na-save ang wingband #${row.wingband_no}.`);
+      resetWbForm();
+      await loadWingbands();
+      $("wb-number").focus();
+    });
+  });
+
+  $("wb-list").addEventListener("click", async (e) => {
+    const editId = e.target.dataset.edit;
+    const delId = e.target.dataset.del;
+    if (editId) {
+      const x = state.wingbands.find((r) => r.id === editId);
+      if (!x) return;
+      state.editingWbId = x.id;
+      $("wb-number").value = x.wingband_no;
+      $("wb-markings").value = x.markings || "";
+      $("wb-notes").value = x.notes || "";
+      $("wb-form-title").textContent = `I-edit ang wingband #${x.wingband_no}`;
+      $("wb-submit").textContent = "I-update";
+      $("wb-cancel").hidden = false;
+      $("wb-form").scrollIntoView({ behavior: "smooth", block: "start" });
+      $("wb-number").focus();
+    }
+    if (delId) {
+      const x = state.wingbands.find((r) => r.id === delId);
+      if (!x || !confirm(`Burahin ang wingband #${x.wingband_no}?`)) return;
+      const { error } = await db.from("wingbands").delete().eq("id", delId);
+      if (error) return fail(error);
+      if (state.editingWbId === delId) resetWbForm();
+      toast("Nabura.");
+      await loadWingbands();
+    }
+  });
+
+  $("wb-export-btn").addEventListener("click", () => {
+    const b = currentBatch();
+    if (!b || !state.wingbands.length) return toast("Walang ma-export.", true);
+    downloadCsv(`${safeName(b.name)}-wingband.csv`, [
+      ["Wingband #", "Markings", "Notes", "Nag-input"],
+      ...state.wingbands.map((w) => [w.wingband_no, w.markings ?? "", w.notes ?? "", w.created_by ?? ""]),
+    ]);
   });
 
   // ---------------------------------------------------------------

@@ -482,6 +482,80 @@ dialog::backdrop { background: rgba(2, 6, 23, .55); backdrop-filter: blur(4px); 
 }
 .period label { color: var(--c-Rent); }
 
+/* ---------- Tabs ---------- */
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 8px 14px;
+  font: inherit;
+  font-weight: 700;
+  font-size: .9rem;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s, color .15s;
+}
+.tab:hover { color: var(--text); background: var(--surface-2); }
+.tab:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--ring); }
+.tab.active {
+  color: #fff;
+  background: var(--brand-grad);
+  box-shadow: 0 6px 16px -8px rgba(220, 38, 38, .7);
+}
+.tab .count:empty { display: none; }
+.tab .count {
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: .72rem;
+  font-weight: 800;
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+}
+.tab.active .count { background: rgba(255, 255, 255, .25); }
+
+.summary.mini { grid-template-columns: repeat(3, 1fr); }
+.summary.mini .stat .value { font-size: 1.5rem; }
+.summary.mini .stat:last-child { grid-column: auto; }
+
+/* ---------- Culled / Wingband lists ---------- */
+.record-list li.rec-cull { --c: var(--c-Gamot); }
+.record-list li.rec-wb { --c: var(--primary); }
+.record-list .amount .unit { font-size: .75rem; font-weight: 600; color: var(--muted); }
+.wb-no {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 10px;
+  padding: 3px 10px;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: .85rem;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  background: var(--brand-grad);
+}
+.record-list .item .muted { font-weight: 500; }
+input.search { width: 220px; max-width: 100%; margin: 0; min-height: 36px; padding: 6px 12px; font-size: .85rem; }
+
 /* ---------- Kulay ng bawat category (huli para manalo sa defaults) ---------- */
 [data-cat][data-cat="Feeds"]    { --c: var(--c-Feeds); }
 [data-cat][data-cat="Bakuna"]   { --c: var(--c-Bakuna); }
@@ -514,6 +588,12 @@ dialog::backdrop { background: rgba(2, 6, 23, .55); backdrop-filter: blur(4px); 
   .stat { padding: 14px 12px 12px; }
   .stat:not(.main) .value { font-size: clamp(.9rem, 4.2vw, 1.05rem); }
   .chip { max-width: 100%; }
+  .summary.mini { grid-template-columns: repeat(3, 1fr); }
+  .summary.mini .stat:last-child { grid-column: auto; }
+  .summary.mini .stat .value { font-size: 1.05rem; }
+  .summary.mini .stat .label { font-size: .62rem; letter-spacing: .03em; }
+  .tab { padding: 8px 10px; }
+  input.search { width: 100%; flex: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {

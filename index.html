@@ -68,38 +68,106 @@
       </div>
 
       <div id="batch-content" hidden>
-        <!-- Summary -->
-        <section class="summary">
-          <div class="stat main">
-            <span class="label">Kabuuang gastos</span>
-            <span class="value" id="sum-total">₱0.00</span>
-            <span class="sub" id="sum-meta"></span>
-          </div>
-          <div class="stat" data-cat="Feeds"><span class="label">Feeds</span><span class="value" id="sum-Feeds">₱0.00</span></div>
-          <div class="stat" data-cat="Bakuna"><span class="label">Bakuna</span><span class="value" id="sum-Bakuna">₱0.00</span></div>
-          <div class="stat" data-cat="Gamot"><span class="label">Gamot</span><span class="value" id="sum-Gamot">₱0.00</span></div>
-          <div class="stat" data-cat="Vitamins"><span class="label">Vitamins</span><span class="value" id="sum-Vitamins">₱0.00</span></div>
-          <div class="stat" data-cat="Rent"><span class="label">Rent</span><span class="value" id="sum-Rent">₱0.00</span></div>
-          <div class="stat" data-cat="Sahod"><span class="label">Sahod</span><span class="value" id="sum-Sahod">₱0.00</span></div>
-          <div class="stat" data-cat="Iba pa"><span class="label">Iba pa</span><span class="value" id="sum-Iba pa">₱0.00</span></div>
-        </section>
+        <nav class="tabs" role="tablist" aria-label="Mga tab">
+          <button type="button" class="tab active" data-tab="gastos" role="tab" aria-selected="true">Gastos</button>
+          <button type="button" class="tab" data-tab="culled" role="tab" aria-selected="false">Culled <span class="count" id="tab-count-culled"></span></button>
+          <button type="button" class="tab" data-tab="wingband" role="tab" aria-selected="false">Wingband <span class="count" id="tab-count-wingband"></span></button>
+        </nav>
 
-        <section id="people-summary" class="card people" hidden>
-          <h2>Gastos bawat tao</h2>
-          <div id="people-chips" class="chips"></div>
-        </section>
+        <!-- ===== TAB: GASTOS ===== -->
+        <div class="panel" data-panel="gastos">
+          <!-- Summary -->
+          <section class="summary">
+            <div class="stat main">
+              <span class="label">Kabuuang gastos</span>
+              <span class="value" id="sum-total">₱0.00</span>
+              <span class="sub" id="sum-meta"></span>
+            </div>
+            <div class="stat" data-cat="Feeds"><span class="label">Feeds</span><span class="value" id="sum-Feeds">₱0.00</span></div>
+            <div class="stat" data-cat="Bakuna"><span class="label">Bakuna</span><span class="value" id="sum-Bakuna">₱0.00</span></div>
+            <div class="stat" data-cat="Gamot"><span class="label">Gamot</span><span class="value" id="sum-Gamot">₱0.00</span></div>
+            <div class="stat" data-cat="Vitamins"><span class="label">Vitamins</span><span class="value" id="sum-Vitamins">₱0.00</span></div>
+            <div class="stat" data-cat="Rent"><span class="label">Rent</span><span class="value" id="sum-Rent">₱0.00</span></div>
+            <div class="stat" data-cat="Sahod"><span class="label">Sahod</span><span class="value" id="sum-Sahod">₱0.00</span></div>
+            <div class="stat" data-cat="Iba pa"><span class="label">Iba pa</span><span class="value" id="sum-Iba pa">₱0.00</span></div>
+          </section>
 
-        <div class="grid">
-          <!-- Expense form -->
-          <section class="card">
-            <h2 id="expense-form-title">Mag-input ng gastos</h2>
-            <form id="expense-form">
-              <div class="two">
-                <label>Petsa
-                  <input type="date" id="exp-date" required>
+          <section id="people-summary" class="card people" hidden>
+            <h2>Gastos bawat tao</h2>
+            <div id="people-chips" class="chips"></div>
+          </section>
+
+          <div class="grid">
+            <!-- Expense form -->
+            <section class="card">
+              <h2 id="expense-form-title">Mag-input ng gastos</h2>
+              <form id="expense-form">
+                <div class="two">
+                  <label>Petsa
+                    <input type="date" id="exp-date" required>
+                  </label>
+                  <label>Category
+                    <select id="exp-category" required>
+                      <option>Feeds</option>
+                      <option>Bakuna</option>
+                      <option>Gamot</option>
+                      <option>Vitamins</option>
+                      <option>Rent</option>
+                      <option>Sahod</option>
+                      <option>Iba pa</option>
+                    </select>
+                  </label>
+                </div>
+                <div id="rent-period" class="two period" hidden>
+                  <label>Rent mula
+                    <input type="date" id="exp-period-start">
+                  </label>
+                  <label>Rent hanggang
+                    <input type="date" id="exp-period-end">
+                  </label>
+                </div>
+                <label>Item / Description
+                  <input type="text" id="exp-item" required placeholder="hal. Chick Booster 50kg, Sahod ni Mang Jose">
                 </label>
-                <label>Category
-                  <select id="exp-category" required>
+                <div class="two">
+                  <label>Dami <span class="muted small">(optional)</span>
+                    <input type="number" id="exp-qty" min="0" step="any" inputmode="decimal" placeholder="hal. 2">
+                  </label>
+                  <label>Unit <span class="muted small">(optional)</span>
+                    <input type="text" id="exp-unit" placeholder="sako, bote, vial…" list="unit-list">
+                    <datalist id="unit-list">
+                      <option value="sako"><option value="kg"><option value="bote">
+                      <option value="vial"><option value="pack"><option value="pc">
+                      <option value="araw"><option value="buwan">
+                    </datalist>
+                  </label>
+                </div>
+                <div class="two">
+                  <label>Halaga (₱)
+                    <input type="number" id="exp-amount" min="0" step="0.01" inputmode="decimal" required placeholder="0.00">
+                  </label>
+                  <label>Sino ang gumastos
+                    <input type="text" id="exp-paid-by" list="people-list" placeholder="Name" autocomplete="off">
+                    <datalist id="people-list"></datalist>
+                  </label>
+                </div>
+                <label>Notes <span class="muted small">(optional)</span>
+                  <input type="text" id="exp-notes" placeholder="hal. binili sa Agrivet ni Mang Jose">
+                </label>
+                <div class="row-btns">
+                  <button type="submit" class="btn primary" id="exp-submit">I-save</button>
+                  <button type="button" class="btn ghost" id="exp-cancel" hidden>Cancel</button>
+                </div>
+              </form>
+            </section>
+
+            <!-- Expense list -->
+            <section class="card">
+              <div class="list-head">
+                <h2>Mga gastos</h2>
+                <div class="row-btns">
+                  <select id="filter-category" aria-label="Filter category">
+                    <option value="">Lahat</option>
                     <option>Feeds</option>
                     <option>Bakuna</option>
                     <option>Gamot</option>
@@ -108,80 +176,108 @@
                     <option>Sahod</option>
                     <option>Iba pa</option>
                   </select>
-                </label>
+                  <select id="filter-person" aria-label="Filter kung sino ang gumastos">
+                    <option value="">Lahat ng tao</option>
+                  </select>
+                  <button id="export-btn" class="btn ghost small">CSV</button>
+                </div>
               </div>
-              <div id="rent-period" class="two period" hidden>
-                <label>Rent mula
-                  <input type="date" id="exp-period-start">
-                </label>
-                <label>Rent hanggang
-                  <input type="date" id="exp-period-end">
-                </label>
-              </div>
-              <label>Item / Description
-                <input type="text" id="exp-item" required placeholder="hal. Chick Booster 50kg, Sahod ni Mang Jose">
-              </label>
-              <div class="two">
-                <label>Dami <span class="muted small">(optional)</span>
-                  <input type="number" id="exp-qty" min="0" step="any" inputmode="decimal" placeholder="hal. 2">
-                </label>
-                <label>Unit <span class="muted small">(optional)</span>
-                  <input type="text" id="exp-unit" placeholder="sako, bote, vial…" list="unit-list">
-                  <datalist id="unit-list">
-                    <option value="sako"><option value="kg"><option value="bote">
-                    <option value="vial"><option value="pack"><option value="pc">
-                    <option value="araw"><option value="buwan">
-                  </datalist>
-                </label>
-              </div>
-              <div class="two">
-                <label>Halaga (₱)
-                  <input type="number" id="exp-amount" min="0" step="0.01" inputmode="decimal" required placeholder="0.00">
-                </label>
-                <label>Sino ang gumastos
-                  <input type="text" id="exp-paid-by" list="people-list" placeholder="Name" autocomplete="off">
-                  <datalist id="people-list"></datalist>
-                </label>
-              </div>
-              <label>Notes <span class="muted small">(optional)</span>
-                <input type="text" id="exp-notes" placeholder="hal. binili sa Agrivet ni Mang Jose">
-              </label>
-              <div class="row-btns">
-                <button type="submit" class="btn primary" id="exp-submit">I-save</button>
-                <button type="button" class="btn ghost" id="exp-cancel" hidden>Cancel</button>
-              </div>
-            </form>
+              <ul id="expense-list" class="expense-list"></ul>
+              <p id="expense-empty" class="muted center" hidden>Wala pang gastos na naka-input.</p>
+            </section>
+          </div>
+        </div>
+
+        <!-- ===== TAB: CULLED ===== -->
+        <div class="panel" data-panel="culled" hidden>
+          <section class="summary mini">
+            <div class="stat"><span class="label">Kabuuang na-cull</span><span class="value" id="cull-total">0</span></div>
+            <div class="stat"><span class="label">Natitira</span><span class="value" id="cull-remaining">—</span></div>
+            <div class="stat"><span class="label">Porsyento na-cull</span><span class="value" id="cull-percent">—</span></div>
           </section>
 
-          <!-- Expense list -->
-          <section class="card">
-            <div class="list-head">
-              <h2>Mga gastos</h2>
-              <div class="row-btns">
-                <select id="filter-category" aria-label="Filter category">
-                  <option value="">Lahat</option>
-                  <option>Feeds</option>
-                  <option>Bakuna</option>
-                  <option>Gamot</option>
-                  <option>Vitamins</option>
-                  <option>Rent</option>
-                  <option>Sahod</option>
-                  <option>Iba pa</option>
-                </select>
-                <select id="filter-person" aria-label="Filter kung sino ang gumastos">
-                  <option value="">Lahat ng tao</option>
-                </select>
-                <button id="export-btn" class="btn ghost small">CSV</button>
-              </div>
-            </div>
-            <ul id="expense-list" class="expense-list"></ul>
-            <p id="expense-empty" class="muted center" hidden>Wala pang gastos na naka-input.</p>
+          <section id="cull-by-marking" class="card people" hidden>
+            <h2>Bawat marking</h2>
+            <div id="cull-chips" class="chips"></div>
           </section>
+
+          <div class="grid">
+            <section class="card">
+              <h2 id="cull-form-title">Mag-lista ng culled</h2>
+              <form id="cull-form">
+                <div class="two">
+                  <label>Petsa
+                    <input type="date" id="cull-date" required>
+                  </label>
+                  <label>Quantity
+                    <input type="number" id="cull-qty" min="1" step="1" inputmode="numeric" required placeholder="0">
+                  </label>
+                </div>
+                <label>Markings
+                  <input type="text" id="cull-markings" required list="cull-markings-list" placeholder="hal. Left nose, Right toe punch" autocomplete="off">
+                  <datalist id="cull-markings-list"></datalist>
+                </label>
+                <label>Notes <span class="muted small">(optional)</span>
+                  <input type="text" id="cull-notes" placeholder="hal. mahina, may sakit, maliit">
+                </label>
+                <div class="row-btns">
+                  <button type="submit" class="btn primary" id="cull-submit">I-save</button>
+                  <button type="button" class="btn ghost" id="cull-cancel" hidden>Cancel</button>
+                </div>
+              </form>
+            </section>
+
+            <section class="card">
+              <div class="list-head">
+                <h2>Mga culled</h2>
+                <button id="cull-export-btn" class="btn ghost small">CSV</button>
+              </div>
+              <ul id="cull-list" class="expense-list record-list"></ul>
+              <p id="cull-empty" class="muted center" hidden>Wala pang culled na naka-lista.</p>
+            </section>
+          </div>
+        </div>
+
+        <!-- ===== TAB: WINGBAND ===== -->
+        <div class="panel" data-panel="wingband" hidden>
+          <div class="grid">
+            <section class="card">
+              <h2 id="wb-form-title">Mag-lagay ng wingband</h2>
+              <form id="wb-form">
+                <label>Wingband number
+                  <input type="text" id="wb-number" required placeholder="hal. 001" autocomplete="off">
+                </label>
+                <label>Markings
+                  <input type="text" id="wb-markings" list="wb-markings-list" placeholder="hal. Left nose, Right toe punch" autocomplete="off">
+                  <datalist id="wb-markings-list"></datalist>
+                </label>
+                <label>Notes <span class="muted small">(optional)</span>
+                  <input type="text" id="wb-notes" placeholder="hal. kulay, bloodline, kasarian">
+                </label>
+                <div class="row-btns">
+                  <button type="submit" class="btn primary" id="wb-submit">I-save</button>
+                  <button type="button" class="btn ghost" id="wb-cancel" hidden>Cancel</button>
+                </div>
+              </form>
+            </section>
+
+            <section class="card">
+              <div class="list-head">
+                <h2>Mga wingband <span class="muted small" id="wb-count"></span></h2>
+                <div class="row-btns">
+                  <input type="search" id="wb-search" class="search" placeholder="Hanapin ang # o marking" aria-label="Hanapin ang wingband">
+                  <button id="wb-export-btn" class="btn ghost small">CSV</button>
+                </div>
+              </div>
+              <ul id="wb-list" class="expense-list record-list"></ul>
+              <p id="wb-empty" class="muted center" hidden>Wala pang wingband na naka-lista.</p>
+            </section>
+          </div>
         </div>
       </div>
 
       <!-- Overview -->
-      <section class="card">
+      <section class="card" id="overview-card">
         <h2>Lahat ng Batch</h2>
         <div class="table-wrap">
           <table class="overview">
